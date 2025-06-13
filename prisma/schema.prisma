@@ -1,0 +1,121 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Product {
+  id           Int           @id @default(autoincrement())
+  name         String
+  slug        String   @unique
+  description  String
+  images       String[]      // lista URLi
+  price        Float
+  category     String
+  stock        Int
+  isAvailable  Boolean       @default(true)
+  rating       Float         @default(0)
+  reviewCount  Int           @default(0)
+
+  orders       OrderDetail[]
+  reviews      Review[]
+}
+
+model Order {
+  id         Int           @id @default(autoincrement())
+  user       User?         @relation(fields: [userId], references: [id])
+  userId     Int?
+  orderDate  DateTime      @default(now())
+  total      Float         @default(0)
+  status     OrderStatus   @default(PENDING)
+  details    OrderDetail[]
+  payments   Payment[]
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+model OrderDetail {
+  id          Int      @id @default(autoincrement())
+  order       Order    @relation(fields: [orderId], references: [id])
+  orderId     Int
+  product     Product  @relation(fields: [productId], references: [id])
+  productId   Int
+  quantity    Int
+  totalPrice  Float
+}
+
+model Payment {
+  id          Int      @id @default(autoincrement())
+  order       Order    @relation(fields: [orderId], references: [id])
+  orderId     Int
+  amount      Float
+  paymentDate DateTime @default(now())
+  method      String
+  status      String   // np. "paid", "failed", "pending"
+}
+
+model User {
+  id            Int             @id @default(autoincrement())
+  email         String?         @unique
+  country       String?
+  ageRange      String?         // np. "18-24", "25-34"
+  gender        String?         // np. "male", "female", "other"
+  createdAt     DateTime        @default(now())
+  isAdmin       Boolean         @default(false)
+
+  orders        Order[]
+  visits        Visit[]
+  purchases     PurchaseStat[]
+  reviews      Review[]  
+}
+
+model Visit {
+  id         Int       @id @default(autoincrement())
+  user       User?     @relation(fields: [userId], references: [id])
+  userId     Int?
+  ip         String
+  country    String?
+  device     String?     // mobile / desktop / tablet
+  browser    String?
+  language   String?
+  timestamp  DateTime    @default(now())
+
+  page       PageView?   @relation(fields: [pageId], references: [id])
+  pageId     Int?
+}
+
+model PageView {
+  id        Int       @id @default(autoincrement())
+  path      String    // np. "/product/slug", "/checkout"
+  title     String
+  visits    Visit[]
+}
+
+model PurchaseStat {
+  id            Int      @id @default(autoincrement())
+  user          User     @relation(fields: [userId], references: [id])
+  userId        Int
+  totalSpent    Float    @default(0)
+  totalOrders   Int      @default(0)
+  lastPurchase  DateTime?
+}
+
+model Review {
+  id         Int      @id @default(autoincrement())
+  user       User?    @relation(fields: [userId], references: [id])
+  userId     Int?
+  product    Product  @relation(fields: [productId], references: [id])
+  productId  Int
+  rating     Int      // 1–5
+  comment    String
+  createdAt  DateTime @default(now())
+}
