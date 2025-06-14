@@ -1,28 +1,35 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import type { Prisma } from "@prisma/client"   // 👈
+import { OrderStatus, Prisma } from "@prisma/client" // 👈 bez `type` przed OrderStatus
+
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
 
-  const status = searchParams.get("status") ?? "all"
-  const limit  = Math.min(Number(searchParams.get("limit")  ?? 20), 100)
-  const offset = Math.max(Number(searchParams.get("offset") ?? 0),  0)
-  const sort   = searchParams.get("sort")    ?? "newest"
+  const statusParam = searchParams.get("status") ?? "all"
+  const limit       = Math.min(Number(searchParams.get("limit")  ?? 50), 100)
+  const offset      = Math.max(Number(searchParams.get("offset") ?? 0),  0)
+  const sort        = searchParams.get("sort")   ?? "newest"
 
-  /* ---------- orderBy z jawnie zadanym typem ---------- */
+  /* ---------- orderBy ---------- */
   let orderBy: Prisma.OrderOrderByWithRelationInput
+  if (sort === "total-asc")      orderBy = { total: "asc" }
+  else if (sort === "total-desc")orderBy = { total: "desc" }
+  else if (sort === "oldest")    orderBy = { orderDate: "asc" }
+  else                           orderBy = { orderDate: "desc" }
 
-  if (sort === "total-asc")      orderBy = { total:     "asc"  }
-  else if (sort === "total-desc")orderBy = { total:     "desc" }
-  else if (sort === "oldest")    orderBy = { orderDate: "asc"  }
-  else                           orderBy = { orderDate: "desc" }  // newest
-
-  /* ---------- filtr ---------- */
+  /* ---------- where ---------- */
   const where: Prisma.OrderWhereInput = {}
-  if (status !== "all") where.status = status
 
-  /* ---------- zapytania ---------- */
+  // tylko jeśli parametr jest zgodny z enumem
+  if (
+    statusParam !== "all" &&
+    (Object.values(OrderStatus) as string[]).includes(statusParam.toUpperCase())
+  ) {
+    where.status = statusParam.toUpperCase() as OrderStatus
+  }
+
+  /* ---------- query ---------- */
   const [ total, orders ] = await Promise.all([
     prisma.order.count({ where }),
     prisma.order.findMany({

@@ -20,7 +20,7 @@ import { ProductCard } from "@/components/product-card"
 import { ProductGridSkeleton } from "@/components/loading-skeleton"
 
 /* ------------ stałe ------------ */
-const PAGE_SIZE = 20
+const PAGE_SIZE = 52
 const fetcher   = (url: string) => fetch(url).then(r => r.json())
 const SORT_OPTS = {
   "price-asc":  { label: "Price ↑"  },

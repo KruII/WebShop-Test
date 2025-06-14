@@ -1,14 +1,8 @@
+/* app/admin/orders-table.tsx */
 "use client"
-import { format } from "date-fns"
-import type { Order, OrderStatus } from "@prisma/client"
+import type { Order } from "@prisma/client"
 
-type OrderRow = Order & {
-  status: OrderStatus   // gdyby w modelu status opcjonalny ⇒ OrderStatus | null
-  total:  number
-  details: any[]
-}
-
-export default function OrdersTable({ orders }: { orders: OrderRow[] }) {
+export default function OrdersTable({ orders }: { orders: (Order & { details: any[] })[] }) {
   return (
     <table className="w-full text-sm">
       <thead className="text-left border-b">
@@ -23,7 +17,14 @@ export default function OrdersTable({ orders }: { orders: OrderRow[] }) {
         {orders.map(o => (
           <tr key={o.id} className="border-b last:border-none">
             <td className="py-2">{o.id}</td>
-            <td>{format(new Date(o.orderDate), "yyyy-MM-dd")}</td>
+
+            {/* ✅ format w UTC, identyczny na serwerze i w przeglądarce */}
+            <td>
+              <time dateTime={o.orderDate.toISOString()}>
+                {o.orderDate.toISOString().slice(0, 10)}  {/* yyyy-MM-dd */}
+              </time>
+            </td>
+
             <td className="capitalize">{o.status}</td>
             <td className="text-right">${o.total.toFixed(2)}</td>
           </tr>
